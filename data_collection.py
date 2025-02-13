@@ -22,25 +22,26 @@ def check_finish(board) -> bool:
         return True
     return False
 
-def get_game_id() -> int:
+def get_version() -> int:
     files = (glob.glob(r'expert_data_collection/*.npy'))
     if len(files) == 0:
         return 1
     highest_index = 0
     for f in files:
-        current_index = int(f.split("actions_and_states_game_")[-1].split(".npy")[0])
+        current_index = int(f.split("states_actions_")[-1].split(".npy")[0])
         highest_index = max(highest_index, current_index)
 
     return highest_index + 1
 
-def save_data(total_actions:list, total_states:list):
-    total_actions = np.array(total_actions).reshape(-1, 1)
+def save_data(total_states:list, total_actions:list):
     total_states = np.array(total_states).reshape(-1,1)
-    actions_and_states = np.concatenate((total_actions, total_states), axis = 1)
-    game_id = get_game_id()
+    total_actions = np.array(total_actions).reshape(-1, 1)
+    
+    states_and_actions = np.concatenate((total_states, total_actions), axis = 1)
+    version = get_version()
     if not os.path.isdir('expert_data_collection'):
         os.mkdir('expert_data_collection')
-    np.save(f"expert_data_collection/actions_and_states_game_{game_id}.npy", actions_and_states)
+    np.save(f"expert_data_collection/states_actions_{version}.npy", states_and_actions)
     print("Expert Data Collected Succesfully.")
 
 def get_board(time_step:int, game_id:int=1) -> object:
@@ -65,7 +66,7 @@ def generate_games(_):
     }
     max_actions = 100
 
-    action_list, state_list = [], []
+    state_list, action_list = [], []
 
     board = chess.Board()
     stockfish.set_position([])
@@ -84,4 +85,4 @@ def generate_games(_):
         if check_finish(board) or len(action_list) > max_actions:
             break
 
-    save_data(action_list, state_list)
+    save_data(state_list, action_list)
