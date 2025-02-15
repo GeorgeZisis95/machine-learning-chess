@@ -1,46 +1,101 @@
 import numpy as np
 import os
 
-from collections import defaultdict
-from data_encoding import create_uci_labels, get_canonical_board
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
-np.set_printoptions(threshold=np.inf)
 
-total_states, total_actions = [], []
-files = os.listdir('expert_data_collection')
-for idx, f in enumerate(files):
-    states_actions = np.load(f'expert_data_collection/{f}', allow_pickle=True)
-    states = states_actions[:,0]
-    actions = states_actions[:,1]
+class ResNet(nn.Module):
+	def __init__(self, game, device, input_channels=18, filters=256, res_blocks=19):
+		super().__init__()
+		self.device = device
 
-    total_states.extend(states)
-    total_actions.extend(actions)
+		self.start_block = nn.Sequential(nn.Conv2d(input_channels, filters, kernel_size=3, padding=1, bias=False),
+										nn.BatchNorm2d(filters),
+										nn.ReLU())
 
-occurences_dict = defaultdict(list)
-for i,item in enumerate(total_states):
-    occurences_dict[item].append(i)
-occurences_dict = {k:v for k,v in occurences_dict.items() if len(v) >= 1}
+		self.res_tower = nn.ModuleList([ResBlock(filters) for _ in range(res_blocks)])
 
-state_prob_dict = {}
-for current_state, indeces in occurences_dict.items():
-    actions = [total_actions[i] for i in indeces]
-    total_repetitions = len(indeces)
-    counts = {}
-    for n in actions:
-        counts[n] = counts.get(n, 0) + 1
-    probs = np.zeros((len(create_uci_labels())))
-    for action, count in counts.items():
-        get_index = create_uci_labels().index(action)
-        correct_probability = count / total_repetitions
-        probs[get_index] = correct_probability
-    state_prob_dict[current_state] = probs 
+		self.policy_head = nn.Sequential(nn.Conv2d(filters, 2, kernel_size=1, padding=0, bias=True),
+										nn.BatchNorm2d(2),
+										nn.ReLU(),
+										nn.Flatten(),
+										nn.Linear(2 * game.rows * game.columns, game.action_size))
 
-encoded_states, encoded_actions = [], []
-for state, action in state_prob_dict.items():
-    encoded_states.append(get_canonical_board(state))
-    encoded_actions.append(action)
+		self.value_head = nn.Sequential(nn.Conv2d(filters, 1, kernel_size=1, padding=0, bias=True),
+									   nn.BatchNorm2d(1),
+									   nn.ReLU(),
+									   nn.Flatten(),
+									   nn.Linear(1 * game.rows * game.columns, 256),
+									   nn.ReLU(),
+									   nn.Linear(256, 1),
+									   nn.Tanh())
+		self.to(device)
 
-if not os.path.isdir('encoded_data_collection'):
-    os.mkdir('encoded_data_collection')
-np.save(f"encoded_data_collection/features", encoded_states)
-np.save(f"encoded_data_collection/labels", encoded_actions)
+	def forward(self, state):
+		state = self.start_block(state)
+		for res_block in self.res_tower:
+			state = res_block(state)
+		policy = self.policy_head(state)
+		value = self.value_head(state)
+		return policy, value
+
+
+class ResBlock(nn.Module):
+	def __init__(self, filters):
+		super().__init__()
+		self.conv1 = nn.Conv2d(filters, filters, kernel_size=3, padding=1, bias=False)
+		self.batch1 = nn.BatchNorm2d(filters)
+		self.conv2 = nn.Conv2d(filters, filters, kernel_size=3, padding=1, bias=False)
+		self.batch2 = nn.BatchNorm2d(filters)
+
+	def forward(self, state):
+		residual = state
+		state = F.relu(self.batch1(self.conv1(state)))
+		state = self.batch2(self.conv2(state))
+		state = state + residual
+		state = F.relu(state)
+		return state
+
+
+def train(self, dataset):
+    chunks = (len(dataset) - 1) // self.args.batch_size + 1
+    for i in range(chunks-1):
+        sample = dataset[i*self.args.batch_size:(i+1)*self.args.batch_size]
+        states, policy_targets, value_targets = zip(*sample)
+
+        states = np.array(states, dtype=np.float32) 
+        policy_targets = np.array(policy_targets, dtype=np.float32) 
+        value_targets = np.array(value_targets, dtype=np.float32).reshape(-1, 1)
+
+        states = torch.tensor(states, dtype=torch.float32, device=self.model.device)
+
+        out_policy, out_value = self.model(states)
+
+        policy_targets = torch.tensor(policy_targets, dtype=torch.float32, device=self.model.device)
+        value_targets = torch.tensor(value_targets, dtype=torch.float32, device=self.model.device)
+
+        policy_loss = F.cross_entropy(out_policy, policy_targets)
+        value_loss = F.mse_loss(out_value, value_targets)
+        loss = policy_loss + value_loss
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+def train_dataset(self, dataset):
+    print("==> Start training")
+    self.model.train()
+    for epoch in range(self.args.num_epochs):
+        print(f"Epoch number {epoch} ---------------------------------------------------------------------------")
+        self.train(dataset)
+        if self.scheduler is not None:
+            self.scheduler.step()
+    print("==> Saving Model")
+    if not os.path.isdir("model"):
+        os.mkdir("model")
+    torch.save(self.model.state_dict(), f"model/{repr(self.game)}{self.args.version}.{self.args.iteration}.pt")
+    if not os.path.isdir("optim"):
+        os.mkdir("optim")
+    torch.save(self.optimizer.state_dict(),  f"optim/{repr(self.game)}{self.args.version}.{self.args.iteration}.pt")

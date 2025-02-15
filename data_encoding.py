@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 import os
 
 from collections import defaultdict
@@ -92,16 +93,20 @@ def create_uci_labels():
     return labels_array
 
 def encode_data():
-    total_states, total_actions = [], []
+    total_states, total_actions, total_rewards = [], [], []
     files = os.listdir('expert_data_collection')
-    for f in files:
-        states_actions = np.load(f'expert_data_collection/{f}', allow_pickle=True)
-        states = states_actions[:,0]
-        actions = states_actions[:,1]
-
+    for each_file in files:
+        with open(f'expert_data_collection/{each_file}', 'rb') as f:
+            experience_tuple = pickle.load(f)
+        states, actions, reward = experience_tuple
+        
+        states = states[:,0]
+        actions = actions[:,0]
+        
         total_states.extend(states)
         total_actions.extend(actions)
-
+        total_rewards.append(reward)
+    
     occurences_dict = defaultdict(list)
     for i,item in enumerate(total_states):
         occurences_dict[item].append(i)
@@ -130,3 +135,4 @@ def encode_data():
         os.mkdir('encoded_data_collection')
     np.save(f"encoded_data_collection/features", encoded_states)
     np.save(f"encoded_data_collection/labels", encoded_actions)
+    np.save(f"encoded_data_collection/rewards", total_rewards)
