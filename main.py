@@ -4,6 +4,7 @@ import concurrent.futures
 
 from data_collection import generate_games
 from data_encoding import encode_data
+from data_training import train
 
 parser = argparse.ArgumentParser(description='Chess Engine with Machine Learning')
 parser.add_argument("--get_expert_data", "-ged", action="store_true", help="Begin the process of getting and saving expert data")
@@ -17,3 +18,4 @@ if __name__ == "__main__":
             results = [future.result() for future in concurrent.futures.as_completed(futures)]
 
     encode_data()
+    train()

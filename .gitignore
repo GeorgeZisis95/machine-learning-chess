@@ -1,5 +1,11 @@
+# *********************
 expert_data_collection
 encoded_data_collection
+# *********************
+checkpoint_model
+checkpoint_optim
+# *********************
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
