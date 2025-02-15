@@ -1,14 +1,10 @@
 import numpy as np
 import os
 
-from data_encoding import create_uci_labels
+from collections import defaultdict
+from data_encoding import create_uci_labels, get_canonical_board
 
 np.set_printoptions(threshold=np.inf)
-
-#TODO: Crash all data from the different games into one file
-#TODO: Check for duplicate states 
-#TODO: Get the probability table for those states since the action might be different each time
-#TODO: Transform action from uci to table of possibilities
 
 total_states, total_actions = [], []
 files = os.listdir('expert_data_collection')
@@ -20,17 +16,15 @@ for idx, f in enumerate(files):
     total_states.extend(states)
     total_actions.extend(actions)
 
-from collections import defaultdict
+occurences_dict = defaultdict(list)
+for i,item in enumerate(total_states):
+    occurences_dict[item].append(i)
+occurences_dict = {k:v for k,v in occurences_dict.items() if len(v) >= 1}
 
-state_action_dict = defaultdict(list)
-for i,item in enumerate(state_action_dict):
-    state_action_dict[item].append(i)
-state_action_dict = {k:v for k,v in state_action_dict.items() if len(v) >= 1}
-
-newdict = {}
-for key, value in state_action_dict.items():
-    actions = [total_actions[i] for i in value]
-    total_repetitions = len(value)
+state_prob_dict = {}
+for current_state, indeces in occurences_dict.items():
+    actions = [total_actions[i] for i in indeces]
+    total_repetitions = len(indeces)
     counts = {}
     for n in actions:
         counts[n] = counts.get(n, 0) + 1
@@ -39,9 +33,14 @@ for key, value in state_action_dict.items():
         get_index = create_uci_labels().index(action)
         correct_probability = count / total_repetitions
         probs[get_index] = correct_probability
-    newdict[key] = probs 
+    state_prob_dict[current_state] = probs 
 
-for key, value in newdict.items():
-    print(value)
-    print(key)
-    break
+encoded_states, encoded_actions = [], []
+for state, action in state_prob_dict.items():
+    encoded_states.append(get_canonical_board(state))
+    encoded_actions.append(action)
+
+if not os.path.isdir('encoded_data_collection'):
+    os.mkdir('encoded_data_collection')
+np.save(f"encoded_data_collection/features", encoded_states)
+np.save(f"encoded_data_collection/labels", encoded_actions)
