@@ -94,7 +94,7 @@ def create_uci_labels():
 def encode_data():
     total_states, total_actions = [], []
     files = os.listdir('expert_data_collection')
-    for idx, f in enumerate(files):
+    for f in files:
         states_actions = np.load(f'expert_data_collection/{f}', allow_pickle=True)
         states = states_actions[:,0]
         actions = states_actions[:,1]
