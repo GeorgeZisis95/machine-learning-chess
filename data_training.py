@@ -61,7 +61,7 @@ class ResBlock(nn.Module):
         return state
 
 def train():
-    BATCH_SIZE = 4
+    BATCH_SIZE = 256
     NUM_EPOCHS = 10
     FILTERS = 256
     RES_BLOCKS = 19
@@ -71,7 +71,8 @@ def train():
     states = np.load(f'encoded_data_collection/features.npy', allow_pickle=True)
     actions = np.load(f'encoded_data_collection/labels.npy', allow_pickle=True)
     rewards = np.load(f'encoded_data_collection/rewards.npy', allow_pickle=True)
-    dataset = (states, actions, rewards)
+    
+    dataset = list(zip(states, actions, rewards))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ResNet(device=device, input_channels=18, filters=FILTERS, res_blocks=RES_BLOCKS)
@@ -81,7 +82,7 @@ def train():
     model.train()
     for epoch in range(NUM_EPOCHS):
         print("|---------------------------------------------------------------------------|")
-        print(f"    Epoch number {epoch}")
+        print(f"    Epoch number {epoch+1}")
         chunks = (len(dataset) - 1) // BATCH_SIZE + 1
         for i in range(chunks-1):
             sample = dataset[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
@@ -105,6 +106,7 @@ def train():
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        print(f"    Policy Loss: {policy_loss:.3f} Value Loss: {value_loss:.3f}")
     print("|---------------------------------------------------------------------------|")
     print("--> Saving Model")
     if not os.path.isdir("checkpoint_model"):

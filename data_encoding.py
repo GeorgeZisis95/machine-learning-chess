@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import tqdm
 import os
 
 from collections import defaultdict
@@ -55,8 +56,9 @@ def position_planes(board:str) -> np.ndarray:
     assert planes.shape == (12,8,8), f"position_planes shape is: {planes.shape} instead of (12,8,8)"
     return planes
 
-def get_canonical_board(board:str) -> np.ndarray:
-    updated_board = change_perspective(board)
+def get_canonical_board(board:str, perpective:bool=True) -> np.ndarray:
+    if perpective:
+        updated_board = change_perspective(board)
     return np.vstack((position_planes(updated_board), helper_planes(updated_board)))
 
 def create_uci_labels():
@@ -95,7 +97,7 @@ def create_uci_labels():
 def encode_data():
     total_states, total_actions, total_rewards = [], [], []
     files = os.listdir('expert_data_collection')
-    for each_file in files:
+    for each_file in tqdm.tqdm(files):
         with open(f'expert_data_collection/{each_file}', 'rb') as f:
             experience_tuple = pickle.load(f)
         states, actions, reward = experience_tuple
@@ -105,8 +107,11 @@ def encode_data():
         
         total_states.extend(states)
         total_actions.extend(actions)
-        total_rewards.append(reward)
+        for _ in range(len(states)):
+            total_rewards.append(reward)
     
+    assert len(total_states) == len(total_actions) == len(total_rewards), f"Length of features and labels is not the same"
+
     occurences_dict = defaultdict(list)
     for i,item in enumerate(total_states):
         occurences_dict[item].append(i)
@@ -115,7 +120,11 @@ def encode_data():
     state_prob_dict = {}
     for current_state, indeces in occurences_dict.items():
         actions = [total_actions[i] for i in indeces]
+        rewards = [total_rewards[i] for i in indeces]
+        
         total_repetitions = len(indeces)
+        correct_value = sum(rewards) / total_repetitions
+
         counts = {}
         for n in actions:
             counts[n] = counts.get(n, 0) + 1
@@ -124,15 +133,17 @@ def encode_data():
             get_index = create_uci_labels().index(action)
             correct_probability = count / total_repetitions
             probs[get_index] = correct_probability
-        state_prob_dict[current_state] = probs 
+        state_prob_dict[current_state] = (probs, correct_value) 
 
-    encoded_states, encoded_actions = [], []
-    for state, action in state_prob_dict.items():
+    encoded_states, encoded_actions, encoded_values = [], [], []
+    for state, action_value in state_prob_dict.items():
+        action, value = action_value
         encoded_states.append(get_canonical_board(state))
         encoded_actions.append(action)
+        encoded_values.append(value)
 
     if not os.path.isdir('encoded_data_collection'):
         os.mkdir('encoded_data_collection')
     np.save(f"encoded_data_collection/features", encoded_states)
     np.save(f"encoded_data_collection/labels", encoded_actions)
-    np.save(f"encoded_data_collection/rewards", total_rewards)
+    np.save(f"encoded_data_collection/rewards", encoded_values)
