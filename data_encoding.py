@@ -59,7 +59,9 @@ def position_planes(board:str) -> np.ndarray:
 def get_canonical_board(board:str, perpective:bool=True) -> np.ndarray:
     if perpective:
         updated_board = change_perspective(board)
-    return np.vstack((position_planes(updated_board), helper_planes(updated_board)))
+        return np.vstack((position_planes(updated_board), helper_planes(updated_board)))
+    return np.vstack((position_planes(board), helper_planes(board)))
+
 
 def create_uci_labels():
     labels_array = []

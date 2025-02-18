@@ -9,6 +9,9 @@ import chess
 import glob
 import os
 
+ELO_RATING = 1350
+MAX_ACTIONS = 200
+
 def check_finish(board) -> bool:
     if any([board.is_checkmate(),
             board.is_stalemate(),
@@ -59,14 +62,13 @@ def get_board(time_step:int, game_id:int=1) -> object:
     return test_board
 
 def generate_games(_):
-    stockfish.set_elo_rating(elo_rating=1350)
+    stockfish.set_elo_rating(elo_rating=ELO_RATING)
 
     weight_cases = {
         1: [100],
         2: [80, 20],
         3: [80, 15, 5]
     }
-    max_actions = 100
 
     state_list, action_list = [], []
 
@@ -84,7 +86,7 @@ def generate_games(_):
         board.push_san(action_taken)
         stockfish.set_position(action_list)
 
-        if check_finish(board) or len(action_list) > max_actions:
+        if check_finish(board) or len(action_list) > MAX_ACTIONS:
             result = board.result()
             if result == "0-1":
                 reward = -1
