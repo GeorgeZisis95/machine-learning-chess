@@ -106,9 +106,3 @@ def generate_all_possible_uci_moves():
 all_uci_moves = generate_all_possible_uci_moves()
 uci_to_index = {uci: idx for idx, uci in enumerate(all_uci_moves)}
 index_to_uci = {idx: uci for uci, idx in uci_to_index.items()}
-
-print(f"Total move classes: {len(all_uci_moves)}")
-
-print(uci_to_index["e2e4"])
-print(uci_to_index["e7e8q"])
-print(index_to_uci[100])
