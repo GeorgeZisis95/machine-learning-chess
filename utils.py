@@ -78,18 +78,30 @@ def fen_to_tensor(fen):
     return tensor
 
 def generate_all_possible_uci_moves():
-    all_moves = []
-    squares = [chess.square(file, rank) for file in range(8) for rank in range(8)]
+    all_moves = set()
 
-    for from_sq, to_sq in itertools.product(squares, squares):
-        move = chess.Move(from_sq, to_sq)
-        if chess.SQUARE_NAMES[from_sq] != chess.SQUARE_NAMES[to_sq]:
-            all_moves.append(move.uci())
-        for promo in ['q', 'r', 'b', 'n']:
-            move = chess.Move(from_sq, to_sq, promotion=chess.Piece.from_symbol(promo).piece_type)
-            all_moves.append(move.uci())
+    for from_rank in range(8):
+        for from_file in range(8):
+            for to_rank in range(8):
+                for to_file in range(8):
+                    from_sq = chess.square(from_file, from_rank)
+                    to_sq = chess.square(to_file, to_rank)
 
-    return sorted(set(all_moves))
+                    if from_sq == to_sq:
+                        continue
+
+                    move = chess.Move(from_sq, to_sq)
+                    all_moves.add(move.uci())
+
+                    # Add legal promotions (only from rank 6 to 7 for white, 1 to 0 for black)
+                    if (from_rank == 6 and to_rank == 7) or (from_rank == 1 and to_rank == 0):
+                        for promo in ['q', 'r', 'b', 'n']:
+                            promo_move = chess.Move(from_sq, to_sq, promotion=chess.Piece.from_symbol(promo).piece_type)
+                            all_moves.add(promo_move.uci())
+
+    all_moves = sorted(all_moves)
+    return all_moves
+
 
 all_uci_moves = generate_all_possible_uci_moves()
 uci_to_index = {uci: idx for idx, uci in enumerate(all_uci_moves)}
@@ -98,4 +110,5 @@ index_to_uci = {idx: uci for uci, idx in uci_to_index.items()}
 print(f"Total move classes: {len(all_uci_moves)}")
 
 print(uci_to_index["e2e4"])
-print(index_to_uci[10701])
+print(uci_to_index["e7e8q"])
+print(index_to_uci[100])
