@@ -1,56 +1,5 @@
-import csv
 import chess
-import chess.pgn
-import itertools
 import numpy as np
-
-def create_pgn():
-    board = chess.Board()
-    game = chess.pgn.Game()
-    node = game
-    game.headers["Event"] = "Test Game"
-    game.headers["White"] = "MyEngine"
-    game.headers["Black"] = "RandomBot"
-    game.headers["Result"] = board.result()
-
-    # Sample moves (replace with actual game loop)
-    while not board.is_game_over():
-        move = list(board.legal_moves)[0]  # play first legal move
-        board.push(move)
-        node = node.add_variation(move)
-
-    # Save to PGN file
-    with open("saved_game.pgn", "w") as f:
-        print(game, file=f)
-
-def extract_from_pgn():
-    pgn = open("sample_game.pgn")
-    game = chess.pgn.read_game(pgn)
-    board = game.board()
-
-    for move in game.mainline_moves():
-        fen = board.fen()
-        uci = move.uci()
-
-        print(f"fen: {fen}")
-        print(f"Move: {uci}")
-        print("------")
-
-        board.push(move)
-
-def save_csv():
-    with open("dataset.csv", "w", newline="") as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(["fen", "move"])
-
-        game = chess.pgn.read_game(open("sample_game.pgn"))
-        board = game.board()
-
-        for move in game.mainline_moves():
-            fen = board.fen()
-            uci = move.uci()
-            writer.writerow([fen, uci])
-            board.push(move)
 
 piece_to_index = {
     chess.PAWN: 0,
