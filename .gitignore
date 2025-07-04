@@ -4,6 +4,7 @@ data
 logs
 scripts.py
 models
+scripts.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

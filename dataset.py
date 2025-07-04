@@ -52,3 +52,5 @@ def create_csv_dataset(games:list, name:str):
 # create_csv_dataset(games, "datasetA")
 
 # DatasetA contains the games of the first 27 files 
+
+create_csv_dataset(load_pgn(f"data/pgn/lichess_elite_2016-02.pgn"), "evalA")
