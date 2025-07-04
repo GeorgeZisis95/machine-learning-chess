@@ -1,30 +1,25 @@
 import chess
 import numpy as np
 
-piece_to_index = {
-    chess.PAWN: 0,
-    chess.KNIGHT: 1,
-    chess.BISHOP: 2,
-    chess.ROOK: 3,
-    chess.QUEEN: 4,
-    chess.KING: 5,
-}
+def position_planes(board:str) -> np.ndarray:
+    check_location = list(board.split()[0])
 
-def fen_to_tensor(fen):
-    board = chess.Board(fen)
-    tensor = np.zeros((12, 8, 8), dtype=np.float32)
+    for idx, char in enumerate(check_location):
+        check_location[idx] = '1' * int(char) if char.isnumeric() else char
+    check_location = "".join(check_location).replace("/","")
 
-    for square in chess.SQUARES:
-        piece = board.piece_at(square)
-        if piece:
-            row = 7 - chess.square_rank(square)
-            col = chess.square_file(square)
-            idx = piece_to_index[piece.piece_type]
-            if piece.color == chess.BLACK:
-                idx += 6
-            tensor[idx, row, col] = 1
+    pieces_order = 'KQRBNPkqrbnp'
+    pieces_dict = {pieces_order[i]: i for i in range(12)}
 
-    return tensor
+    planes = np.zeros((12,8,8), dtype=np.float32)
+    for row in range(8):
+        for column in range(8):
+            piece = check_location[row * 8 + column]
+            if piece.isalpha():
+                planes[pieces_dict[piece]][row][column] = 1
+
+    assert planes.shape == (12,8,8), f"position_planes shape is: {planes.shape} instead of (12,8,8)"
+    return planes
 
 def generate_all_possible_uci_moves():
     all_moves = set()
