@@ -1,5 +1,6 @@
 import os
 import csv
+import tqdm
 import chess
 import chess.pgn
 
@@ -17,7 +18,7 @@ def load_pgn(file_path:str) -> list:
 
 def load_multiple_pgns(num_pgns:int) -> list:
     total_games = []
-    for index, file in enumerate(files):
+    for index, file in tqdm.tqdm(enumerate(files), total=num_pgns):
         if index > num_pgns:
             break
         total_games.extend(load_pgn(f"data/pgn/{file}"))
@@ -35,8 +36,8 @@ def get_state_action_pairs(games:list) -> list:
             board.push(move)
     return state_action_pairs
 
-def create_csv_dataset(games:list):
-    with open("data/csv/dataset.csv", 'w', newline="") as csv_file:
+def create_csv_dataset(games:list, name:str):
+    with open(f"data/csv/{name}.csv", 'w', newline="") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(["fen", "move"])
         for game in games:
@@ -46,3 +47,8 @@ def create_csv_dataset(games:list):
                 uci = move.uci()
                 writer.writerow([fen, uci])
                 board.push(move)
+
+# games = load_multiple_pgns(27)
+# create_csv_dataset(games, "datasetA")
+
+# DatasetA contains the games of the first 27 files 

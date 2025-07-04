@@ -1,7 +1,9 @@
 markdown
 test.py
 data
-misc
+logs
+scripts.py
+models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

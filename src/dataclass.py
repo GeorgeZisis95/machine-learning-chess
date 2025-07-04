@@ -1,10 +1,9 @@
 import torch
-from torch.utils.data import Dataset
 import pandas as pd
-import numpy as np
+
 from src.encode import fen_to_tensor, uci_to_index
 
-class ChessDataset(Dataset):
+class ChessDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path):
         self.data = pd.read_csv(csv_path)
     
