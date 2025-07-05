@@ -46,7 +46,6 @@ def generate_all_possible_uci_moves():
     all_moves = sorted(all_moves)
     return all_moves
 
-
 all_uci_moves = generate_all_possible_uci_moves()
 uci_to_index = {uci: idx for idx, uci in enumerate(all_uci_moves)}
 index_to_uci = {idx: uci for uci, idx in uci_to_index.items()}
