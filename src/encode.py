@@ -21,6 +21,42 @@ def position_planes(board:str) -> np.ndarray:
     assert planes.shape == (12,8,8), f"position_planes shape is: {planes.shape} instead of (12,8,8)"
     return planes
 
+def helper_planes(board:str) -> np.ndarray:
+    split_string = board.split()
+    en_passant = np.zeros((8, 8), dtype=np.float32)
+    alg_to_coord = lambda col, row: (8-int(row), ord(col)-ord('a')) 
+    if split_string[3] != '-':
+        col, row = split_string[3][0], split_string[3][1]
+        the_rank, the_file = alg_to_coord(col, row)
+        en_passant[the_rank][the_file] = 1
+
+    planes = [
+        np.full((8, 8), int('K' in split_string[2]), dtype=np.float32),
+        np.full((8, 8), int('Q' in split_string[2]), dtype=np.float32),
+        np.full((8, 8), int('k' in split_string[2]), dtype=np.float32),
+        np.full((8, 8), int('q' in split_string[2]), dtype=np.float32),
+        np.full((8, 8), int(split_string[1] == 'b'), dtype=np.float32),
+        en_passant,
+    ]
+    planes = np.asarray(planes, dtype=np.float32)
+    assert planes.shape == (6,8,8), f"helper_planes shape is:{planes.shape} instead of (6,8,8)"
+    return planes
+
+def change_perspective(board:str) -> str:
+    split_string = board.split()
+    if split_string[1] == 'b':
+        piece_position = split_string[0].split("/")
+        split_string[0] = "/".join([char.swapcase() for char in reversed(piece_position)])
+        split_string[1] = 'w'
+        split_string[2] = "".join(sorted([char.swapcase() for char in split_string[2]]))
+    return " ".join(split_string)
+
+def get_canonical_board(board:str, perpective:bool=False) -> np.ndarray:
+    if perpective:
+        updated_board = change_perspective(board)
+        return np.vstack((position_planes(updated_board), helper_planes(updated_board)))
+    return np.vstack((position_planes(board), helper_planes(board)))
+
 def generate_all_possible_uci_moves():
     all_moves = set()
 

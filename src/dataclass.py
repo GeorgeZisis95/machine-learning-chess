@@ -1,7 +1,7 @@
 import torch
 import pandas as pd
 
-from src.encode import position_planes, uci_to_index
+from src.encode import get_canonical_board, uci_to_index
 
 class ChessDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path):
@@ -14,7 +14,7 @@ class ChessDataset(torch.utils.data.Dataset):
         fen = self.data.iloc[idx]["fen"]
         move = self.data.iloc[idx]["move"]
 
-        board_tensor = position_planes(fen)
+        board_tensor = get_canonical_board(fen)
         move_index = uci_to_index[move]
 
         board_tensor = torch.tensor(board_tensor)
