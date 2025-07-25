@@ -13,11 +13,13 @@ class ChessDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         fen = self.data.iloc[idx]["fen"]
         move = self.data.iloc[idx]["move"]
+        value = self.data.iloc[idx]["value"]
 
         board_tensor = get_canonical_board(fen)
         move_index = uci_to_index[move]
 
         board_tensor = torch.tensor(board_tensor)
         move_index = torch.tensor(move_index)
+        value_tensor = torch.tensor(value, dtype=torch.float32)
 
-        return board_tensor, move_index
+        return board_tensor, move_index, value_tensor
