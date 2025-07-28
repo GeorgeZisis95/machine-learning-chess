@@ -1,7 +1,4 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 import chess
 import chess.engine
 
@@ -10,33 +7,12 @@ import math
 import random
 
 from src.encode import get_canonical_board, index_to_uci
-
-class ConvNet(nn.Module):
-    def __init__(self, input_channels=18, output_size=4544):
-        super(ConvNet, self).__init__()
-
-        self.conv1 = nn.Conv2d(input_channels, 32, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-
-        self.fc1 = nn.Linear(64 * 8 * 8, 512)
-        self.fc2 = nn.Linear(512, output_size)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-
-        return x
-    
+from src.model import ResNet
+ 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = ConvNet()
+model = ResNet(filters=128, res_blocks=6)
 
-checkpoint = torch.load(f"models/model.2.40.pth")
+checkpoint = torch.load(f"models/model5/model.28.pth")
 model.load_state_dict(checkpoint['model_state_dict'])
 
 model.to(device)
@@ -51,7 +27,7 @@ def predict_move(board):
     legal_moves = [element.uci() for element in board.legal_moves]
     model_input = torch.from_numpy(get_canonical_board(board.fen())).unsqueeze(0).to(device)
     with torch.no_grad():
-        logits = model(model_input)
+        logits, _ = model(model_input)
         probs = torch.softmax(logits, dim=1).squeeze()
         top_moves = torch.topk(probs, k=3)
         shuffled_moves = top_moves.indices[torch.randperm(top_moves.indices.nelement())]
