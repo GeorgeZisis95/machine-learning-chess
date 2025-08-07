@@ -19,7 +19,7 @@ model.eval()
 
 stockfish_path = r"C:\Users\myPC\Downloads\stockfish\stockfish-windows-x86-64-avx2.exe"
 engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
-engine.configure({"Skill Level": 0})
+engine.configure({"Skill Level": 3})
 stockfish_depth = 5
 
 def play_game(model_white=True):

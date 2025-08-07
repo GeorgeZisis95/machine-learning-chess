@@ -1,10 +1,12 @@
-import numpy as np
+import chess
 import torch
 import math
 
+from src.predict import get_policy_value
+from src.encode import all_uci_moves
+
 class AlphaNode:
-    def __init__(self, game, board, prior=0, value=0, player=1,  parent=None):
-        self.game = game
+    def __init__(self, board, prior, value, player, parent=None):
         self.board = board
         self.prior = prior
         self.value = value
@@ -16,7 +18,7 @@ class AlphaNode:
         self.total_value = 0
     
     def is_fully_expanded(self):
-        return len(self.children) == len(self.game.get_legal_actions(self.board))
+        return len(self.children) > 0
     
     def uct_score(self, child, c_puct=2):
         if child.visit_count == 0:
@@ -37,52 +39,48 @@ class AlphaNode:
     
     
 class AlphaTreeSearch: 
-    def __init__(self, game, model):
-        self.game = game
+    def __init__(self, model, device):
         self.model = model
+        self.device = device
 
     @torch.no_grad()
-    def search(self, board, player, num_searches):
-        root = AlphaNode(self.game, board, 0, 0, player, parent=None)
+    def search(self, board, num_searches):
+        player = 1 if board.turn == chess.WHITE else -1
+        root = AlphaNode(board, 0, 0, player, parent=None)
         for _ in range(num_searches):
-            node = root
-            if node.is_fully_expanded():
-                node = node.select_child()
-            if not self.game.get_terminated(node.board, node.player):
-                policy, value = self.get_policy_value(node.board)
-                node.value = value
-                self.expand(node, policy)
-            self.backpropagate(node)
+            node = self.select(root)
+            value = self.expand(node)
+            self.backpropagate(node, value)
         return max(root.children.items(), key=lambda item: item[1].visit_count)[0]
-
-    def expand(self, node, policy):
-        for action, prior in enumerate(policy):
+    
+    def select(self, node):
+        while not node.board.is_game_over():
+            if not node.is_fully_expanded():
+                return node
+            node = node.select_child()
+        
+    def expand(self, node):
+        policy, value = get_policy_value(node.board, self.model, self.device)
+        for index, prior in enumerate(policy):
             if prior > 0:
-                expanded_board = np.copy(self.board)
-                expanded_board = self.game.get_next_state(expanded_board, node.player, action)
-                child_node = AlphaNode(self.game, expanded_board, prior, 0, node.player * -1, parent=node)
-                node.children[action] = child_node
-            else:
-                continue
-
-    def backpropagate(self, node):
+                # Get the move for current index
+                uci_move = all_uci_moves[index]
+                move = chess.Move.from_uci(uci_move)
+                # Make the move
+                new_board = node.board.copy()
+                new_board.push(move)
+                # Get the player
+                player = 1 if new_board.turn == chess.WHITE else -1
+                # Create the corresponding child and add it to children
+                child_node = AlphaNode(new_board, prior, 0, player, parent=node)
+                node.children[move] = child_node
+        return value
+    
+    def backpropagate(self, node, value):
         while node is not None:
             node.visit_count += 1
-            node.total_value += node.value
+            if node.player == 1:
+                node.total_value += value
+            elif node.player == -1:
+                node.total_value += -value
             node = node.parent
-    
-    def get_policy_value(self, board):
-        # The board needs to be reshaped into a 4D tensor with the shape(batch_size, channels, height, width)
-        # We use float32 because neural networks typically expect floating-point numbers for input
-        board_tensor = torch.tensor(board, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-
-        policy, value = self.model(board_tensor)
-        value = value.item()
-        policy = policy.squeeze(0).detach().cpu().numpy()
-        actions = self.game.get_legal_actions(board)
-        total_actions = [0] * self.game.columns
-        for action in actions:
-            total_actions[action] = 1
-        policy = policy * total_actions
-        policy = policy / np.sum(policy)
-        return policy, value

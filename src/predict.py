@@ -15,14 +15,27 @@ def mask_actions(indices):
 def get_model_output(board, model, device):
     model_input = torch.from_numpy(get_canonical_board(board.fen())).unsqueeze(0).to(device)
     with torch.no_grad():
-        logits, _ = model(model_input)
+        logits, value = model(model_input)
         probs = torch.softmax(logits, dim=1).squeeze()
-    return probs.squeeze(0).detach().cpu().numpy()
+    return probs.squeeze(0).detach().cpu().numpy(), value.item()
 
 def filter_policy(probs, mask):
     probs = probs * mask
     probs = probs / np.sum(probs)
     return probs
+
+def get_policy_value(board, model, device, threshold=0.05):
+    legal_moves = [element.uci() for element in board.legal_moves]
+    legal_indices = []
+    for legal_move in legal_moves:
+        legal_indices.append(uci_to_index[legal_move])
+    total_actions = mask_actions(legal_indices)
+    policy, value = get_model_output(board, model, device)
+    policy = filter_policy(policy, total_actions)
+    best_indices = np.where(policy > threshold)[0]
+    total_actions = mask_actions(best_indices)
+    policy = filter_policy(policy, total_actions)
+    return policy, value
 
 def get_policy(board, model, device, threshold=0.05):
     legal_moves = [element.uci() for element in board.legal_moves]
@@ -30,7 +43,7 @@ def get_policy(board, model, device, threshold=0.05):
     for legal_move in legal_moves:
         legal_indices.append(uci_to_index[legal_move])
     total_actions = mask_actions(legal_indices)
-    policy = get_model_output(board, model, device)
+    policy, _ = get_model_output(board, model, device)
     policy = filter_policy(policy, total_actions)
     best_indices = np.where(policy > threshold)[0]
     total_actions = mask_actions(best_indices)
