@@ -49,7 +49,10 @@ class AlphaTreeSearch:
         root = AlphaNode(board, 0, 0, player, parent=None)
         for _ in range(num_searches):
             node = self.select(root)
-            value = self.expand(node)
+            if node.board.is_game_over():
+                value = 0
+            else:
+                value = self.expand(node)
             self.backpropagate(node, value)
         return max(root.children.items(), key=lambda item: item[1].visit_count)[0]
     
@@ -58,6 +61,7 @@ class AlphaTreeSearch:
             if not node.is_fully_expanded():
                 return node
             node = node.select_child()
+        return node
         
     def expand(self, node):
         policy, value = get_policy_value(node.board, self.model, self.device)

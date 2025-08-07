@@ -1,10 +1,9 @@
+import tqdm
 import torch
 import chess
 import chess.engine
 
-import tqdm
-import math
-
+from src.search import AlphaTreeSearch
 from src.predict import get_uci_move
 from src.model import ResNet
  
@@ -17,6 +16,8 @@ model.load_state_dict(checkpoint['model_state_dict'])
 model.to(device)
 model.eval()
 
+search = AlphaTreeSearch(model, device)
+
 stockfish_path = r"C:\Users\myPC\Downloads\stockfish\stockfish-windows-x86-64-avx2.exe"
 engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 engine.configure({"Skill Level": 3})
@@ -26,7 +27,8 @@ def play_game(model_white=True):
     board = chess.Board()
     while not board.is_game_over():
         if (board.turn == chess.WHITE and model_white) or (board.turn == chess.BLACK and not model_white):
-            move = get_uci_move(board, model, device)
+            # move = get_uci_move(board, model, device)
+            move = search.search(board, 100)
         else:
             result = engine.play(board, chess.engine.Limit(depth=stockfish_depth))
             move = result.move
@@ -48,16 +50,3 @@ for i in tqdm.tqdm(range(num_games)):
 
 print(results)
 engine.quit()
-
-W = results["win"]
-L = results["loss"]
-D = results["draw"]
-
-if L + 0.5 * D == 0:
-    elo_diff = float('inf')
-else:
-    elo_diff = 400 * math.log10((W + 0.5 * D + 1e-10) / (L + 0.5 * D + 1e-10))
-
-stockfish_elo = 1500
-your_model_elo = stockfish_elo + elo_diff
-print(f"Estimated Elo: {your_model_elo:.0f}")
