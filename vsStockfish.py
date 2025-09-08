@@ -28,7 +28,7 @@ def play_game(model_white=True):
     while not board.is_game_over():
         if (board.turn == chess.WHITE and model_white) or (board.turn == chess.BLACK and not model_white):
             # move = get_uci_move(board, model, device)
-            move = search.search(board, 100)
+            move = search.search(board, 200)
         else:
             result = engine.play(board, chess.engine.Limit(depth=stockfish_depth))
             move = result.move
