@@ -1,71 +1,206 @@
-# ♟️ Chess AI with Supervised Learning
+♟️ Chess AI Agent using Machine Learning
 
-This project implements a simple yet effective chess-playing AI using supervised learning. It is built with PyTorch and trained on high-ELO human games from the Lichess Elite Database. The system is capable of predicting high-quality moves from board positions and generating full games that can be visualized and evaluated on Lichess.
+Diploma Thesis – University of Patras
+Department of Electrical & Computer Engineering
+Author: Georgios Zisis
+Supervisor: Evangelos Dermatas
+Based on the thesis"Construction of an Automated Chess Engine Using Machine Learning Methods"
 
----
+📖 Overview
+This project explores the development of an intelligent chess-playing agent using modern Machine Learning and Deep Learning techniques. The objective was to investigate different neural network architectures, data representations, and optimization methods while keeping computational requirements within the capabilities of consumer-grade hardware.
+The project was implemented in three major versions, progressively improving the playing strength of the agent against traditional chess engines such as Stockfish.
 
-## 📌 Project Goals
+🎯 Goals
+The main goals of this project were:
 
-- Build a neural network that plays chess using only supervised learning (no search or reinforcement learning).
-- Train it to predict the most likely human move given a board position.
-- Evaluate its quality through top-k accuracy and game-level performance.
+Develop a chess-playing AI agent from scratch.
+Compare different neural network architectures.
+Investigate board-state representations.
+Evaluate performance under limited computational resources.
+Explore AlphaZero-inspired approaches and Monte Carlo Tree Search (MCTS).,
 
----
+🧠 Related Work
+The project draws inspiration from modern chess engines including:
 
-## 🧠 Model Architecture
+Stockfish – combines alpha-beta search with neural evaluation.
+AlphaZero – learns entirely through self-play.
+Leela Chess Zero (Lc0) – open-source AlphaZero-inspired engine.
+AlphaZero.jl – lightweight Julia implementation of AlphaZero principles.
 
-The model, `ChessNet`, is a lightweight convolutional neural network (CNN) that maps board positions to move probabilities:
-- Input: 12×8×8 tensor (binary planes representing piece type and color).
-- Convolutional layers: [Conv2D → ReLU] × 3
-- Fully connected layers: Flatten → Linear(512) → Output(4544)
-- Output: A probability distribution over 4,544 possible UCI moves.
+⚙️ Hardware & Software
+Hardware
 
-## 🧪 Training Details
+AMD Ryzen 7 5800H
+NVIDIA GeForce RTX 3060
+16GB RAM
 
-- Loss function: Cross-entropy Loss
-- Optimizer: Adam (lr=0.001)
-- Batch size: Tunable (commonly 64 or 128)
-- Device: CUDA-enabled GPU
-- Data: Lichess PGN files (Elite games), parsed and filtered
-- Encoding: FEN → binary planes
+Software
 
-Training logs include both training and validation loss, which are saved and visualized after each epoch.
+Python
+PyTorch
+CUDA
+Lichess Elite Database
+Stockfish Chess Engine
 
-## 📈 Evaluation
-### 🔢 Quantitative
+📊 Dataset
+Training data was collected from the Lichess Elite Database.
+Version 1 & 2
 
-- Top-1 Accuracy: ~35%
-- Top-3 Accuracy: ~58%
-- Average Centipawn Loss: ~180 (on Lichess analysis)
+Games between players rated 2400+ vs 2200+
+PGN files up to 2015
+Approximately 2.5 million moves
 
-Demonstrates understanding of opening and positional play, with most errors occurring in complex tactical positions.
+Version 3
 
-### 🎮 Qualitative (Lichess PGN Visualization)
+PGN files up to 2017
+Approximately 25 million moves
 
-The model can generate complete games by playing against itself or a random/opponent agent. These games are saved in .pgn format and imported to Lichess for engine-assisted evaluation.
+Data Pipeline
+Custom utilities were created for:
 
-Example Lichess analysis:
-- 4 inaccuracies
-- 4 mistakes
-- 14 blunders
-- Accuracy scores: 53% vs 59%
+Loading PGN files
+Creating datasets
+Generating CSV training data
+Managing multiple PGN sources simultaneously
 
-## 🔁 Move Selection Logic
-During inference, the model samples from the top-k predicted moves (usually top-3) to increase diversity and reduce deterministic repetition. This allows the agent to play varied, realistic games rather than repeating a single deterministic path.
+🔄 State Representation
+The board state is initially represented using FEN notation.
+Version 1
+Input tensor:
+12 × 8 × 8
 
-## 🧰 Notebooks & Tools
-- train.ipynb: Prepares the dataset and trains the model.
-- eval.ipynb: Evaluates top-k accuracy and plays full games.
-- Games can be exported to PGN and visualized on lichess.org/paste.
+Representing piece positions only.
+Version 2
+Input tensor:
+18 × 8 × 8
 
-## 🤝 Acknowledgments
-- Lichess for their open access to high-quality chess game data.
-- The python-chess library for FEN/PGN parsing and board manipulation.
-- PyTorch for the deep learning framework.
+Including:
 
-## 📚 Future Work
-- Add value head to estimate board evaluation.
-- Introduce reinforcement learning or AlphaZero-style self-play.
-- Train on filtered, high-quality or blunder-free datasets.
-- Experiment with deeper architectures or attention mechanisms.
-- Add GUI or web interface for human vs AI play.
+Piece positions
+Side to move
+Castling rights
+En Passant information
+
+Action Representation
+All legal and illegal moves were mapped to a fixed output space of:
+4544 possible actions
+
+Each move corresponds to a unique index.
+
+🏗️ Model Architectures
+Version 1 – Convolutional Neural Network (CNN)
+
+3 Convolutional Layers
+ReLU Activations
+Flatten Layer
+Fully Connected Layers
+Output Size: 4544 moves
+
+Version 2 – Residual Neural Network (ResNet)
+Convolutional Block
+
+18 Input Planes
+256 Feature Maps
+Batch Normalization
+ReLU Activation
+
+Residual Tower
+
+6 Residual Blocks
+256 Filters per Layer
+
+Policy Head
+
+Predicts move probabilities
+Output: 4544 moves
+
+Value Head
+
+Predicts board evaluation
+Output: Single scalar value using Tanh activation
+
+🚀 Training
+Hyperparameters
+Python1Loss Function = Cross Entropy2Optimizer = Adam3Learning Rate = 0.0014Batch Size = 256Show more lines
+Training schedule:
+
+100 epochs for 2.5M positions
+50 epochs for 25M positions
+
+Training Times
+
+ModeDatasetTimeOffline2.5M positions~2 hoursOnline2.5M positions~6 hoursOnline25M positions~30 hours
+
+Results During Training
+Loss reduction achieved:
+
+ModelInitial LossFinal LossCNN4.152.30ResNet1.390.97
+
+🌳 Monte Carlo Tree Search (MCTS)
+An AlphaZero-inspired MCTS implementation was developed.
+Core Components
+Node
+Stores:
+
+Current State
+Current Player
+Parent Node
+Children Nodes
+Prior Probability
+Visit Count
+Node Value
+
+Tree Search
+Implements:
+
+Selection
+Expansion
+Backpropagation
+
+Following the AlphaZero methodology without rollout simulations.
+
+📈 Experimental Results
+Version 1 (CNN)
+✅ Produces mostly sensible moves
+✅ Plays competitively against low-level Stockfish
+❌ Struggles to convert winning positions
+❌ Weak endgame performance
+
+Version 2 (ResNet)
+✅ Stronger than Version 1
+✅ Achieves occasional victories against Stockfish
+✅ Better positional understanding
+❌ Still struggles in endgames
+❌ More aggressive and sometimes unstable play style
+
+Version 3 (Large Dataset)
+✅ Consistently defeats lower Stockfish levels
+✅ Win rates exceeding 50% in several tests
+✅ Average Centipawn Loss around 30–50
+✅ Significant improvement in endgame conversion
+⚠️ Still exhibits an excessive preference for pawn promotion strategies
+
+⚠️ AlphaZero Feasibility
+Although AlphaZero-style self-play was successfully tested on simpler environments such as:
+
+Tic-Tac-Toe
+Connect Four
+
+it was impractical for full chess training on consumer hardware due to:
+
+Extremely long search times
+Massive self-play requirements
+Repeated training cycles needed for convergence
+
+🔮 Future Work
+Potential improvements include:
+
+Larger training datasets
+Endgame-focused datasets
+Faster MCTS implementations
+C++ or Julia reimplementation for performance
+Improved search strategies
+Full-scale reinforcement learning training,
+
+🏁 Conclusion
+This thesis successfully demonstrates that a machine learning-based chess agent can achieve a respectable playing level using supervised learning and commercially available hardware. The final model can defeat intermediate human players and low-level Stockfish configurations while following move choices that align closely with modern chess engine evaluations.
