@@ -1,206 +1,374 @@
-♟️ Chess AI Agent using Machine Learning
+# ♟️ Chess AI Agent using Machine Learning
 
-Diploma Thesis – University of Patras
-Department of Electrical & Computer Engineering
-Author: Georgios Zisis
-Supervisor: Evangelos Dermatas
-Based on the thesis"Construction of an Automated Chess Engine Using Machine Learning Methods"
+> Diploma Thesis – University of Patras  
+> Department of Electrical & Computer Engineering  
+> Author: **Georgios Zisis**  
+> Supervisor: **Evangelos Dermatas**
 
-📖 Overview
-This project explores the development of an intelligent chess-playing agent using modern Machine Learning and Deep Learning techniques. The objective was to investigate different neural network architectures, data representations, and optimization methods while keeping computational requirements within the capabilities of consumer-grade hardware.
-The project was implemented in three major versions, progressively improving the playing strength of the agent against traditional chess engines such as Stockfish.
+## 📖 Overview
 
-🎯 Goals
-The main goals of this project were:
+This project explores the development of an intelligent chess-playing agent using Machine Learning and Deep Learning techniques. The aim was to investigate different neural network architectures, board representations, and training approaches while operating on consumer-grade hardware.
 
-Develop a chess-playing AI agent from scratch.
-Compare different neural network architectures.
-Investigate board-state representations.
-Evaluate performance under limited computational resources.
-Explore AlphaZero-inspired approaches and Monte Carlo Tree Search (MCTS).,
+The project evolved through three major versions, progressively improving performance against traditional chess engines such as Stockfish.
 
-🧠 Related Work
-The project draws inspiration from modern chess engines including:
+---
 
-Stockfish – combines alpha-beta search with neural evaluation.
-AlphaZero – learns entirely through self-play.
-Leela Chess Zero (Lc0) – open-source AlphaZero-inspired engine.
-AlphaZero.jl – lightweight Julia implementation of AlphaZero principles.
+## 🎯 Objectives
 
-⚙️ Hardware & Software
-Hardware
+- Develop a chess-playing AI agent from scratch.
+- Evaluate various state representations.
+- Compare CNN and Residual Neural Network architectures.
+- Analyze performance under hardware limitations.
+- Explore AlphaZero-inspired Monte Carlo Tree Search techniques.
 
-AMD Ryzen 7 5800H
-NVIDIA GeForce RTX 3060
-16GB RAM
+---
 
-Software
+## 🧠 State of the Art
 
-Python
-PyTorch
-CUDA
-Lichess Elite Database
-Stockfish Chess Engine
+This work was inspired by modern chess engines:
 
-📊 Dataset
-Training data was collected from the Lichess Elite Database.
-Version 1 & 2
+- **Stockfish** – combines alpha-beta search with neural network evaluation.
+- **AlphaZero** – learns exclusively through self-play.
+- **Leela Chess Zero (Lc0)** – open-source AlphaZero-inspired engine.
+- **AlphaZero.jl** – lightweight Julia implementation of AlphaZero principles.
 
-Games between players rated 2400+ vs 2200+
-PGN files up to 2015
-Approximately 2.5 million moves
+---
 
-Version 3
+## ⚙️ Hardware & Software
 
-PGN files up to 2017
-Approximately 25 million moves
+### Hardware
 
-Data Pipeline
-Custom utilities were created for:
+- AMD Ryzen 7 5800H
+- NVIDIA GeForce RTX 3060
+- 16GB RAM
 
-Loading PGN files
-Creating datasets
-Generating CSV training data
-Managing multiple PGN sources simultaneously
+### Software
 
-🔄 State Representation
-The board state is initially represented using FEN notation.
-Version 1
+- Python
+- PyTorch
+- CUDA
+- Stockfish Chess Engine
+- Lichess Elite Database
+
+---
+
+## 📊 Dataset
+
+### Data Source
+
+The training data was collected from the **Lichess Elite Database**.
+
+### Version 1 & 2
+
+- Games from players rated 2400+
+- Opponents rated 2200+
+- PGN files until 2015
+- ~2.5 million moves
+
+### Version 3
+
+- PGN files until 2017
+- ~25 million moves
+
+### Data Pipeline
+
+Custom utilities were developed for:
+
+- Loading PGN files
+- Combining multiple PGN datasets
+- Creating CSV datasets
+- Dataset preprocessing and management
+
+---
+
+## 🔄 Chess Position Representation
+
+### Board State (Input)
+
+Positions are initially represented using **FEN notation**.
+
+#### Version 1
+
 Input tensor:
+
+```text
 12 × 8 × 8
+```
 
-Representing piece positions only.
-Version 2
+Represents the locations of all chess pieces.
+
+#### Version 2
+
 Input tensor:
+
+```text
 18 × 8 × 8
+```
 
-Including:
+Includes:
 
-Piece positions
-Side to move
-Castling rights
-En Passant information
+- Piece locations
+- Side to move
+- Castling rights
+- En passant information
 
-Action Representation
-All legal and illegal moves were mapped to a fixed output space of:
-4544 possible actions
+### Move Representation (Output)
 
-Each move corresponds to a unique index.
+A fixed action space was created:
 
-🏗️ Model Architectures
-Version 1 – Convolutional Neural Network (CNN)
+```text
+4544 possible moves
+```
 
-3 Convolutional Layers
-ReLU Activations
-Flatten Layer
-Fully Connected Layers
-Output Size: 4544 moves
+Every move is mapped to a unique index, including illegal moves for fixed-size network outputs.
 
-Version 2 – Residual Neural Network (ResNet)
-Convolutional Block
+---
 
+## 🏗️ Model Architectures
+
+### Version 1 – CNN
+
+Architecture:
+
+```text
+Input (12x8x8)
+↓
+Conv Layer (32 filters)
+↓
+Conv Layer (64 filters)
+↓
+Conv Layer (64 filters)
+↓
+Flatten
+↓
+Fully Connected (512)
+↓
+Output (4544)
+```
+
+Features:
+
+- Kernel size = 3
+- Padding = 1
+- ReLU activation functions
+
+---
+
+### Version 2 – Residual Neural Network
+
+#### Convolutional Block
+
+```text
 18 Input Planes
+↓
 256 Feature Maps
+↓
 Batch Normalization
-ReLU Activation
+↓
+ReLU
+```
 
-Residual Tower
+#### Residual Tower
 
+```text
 6 Residual Blocks
-256 Filters per Layer
+256 Filters Each
+```
 
-Policy Head
+#### Policy Head
 
-Predicts move probabilities
-Output: 4544 moves
+Predicts move probabilities:
 
-Value Head
+```text
+256 → 2 feature maps
+↓
+BatchNorm
+↓
+ReLU
+↓
+Flatten
+↓
+FC Layer
+↓
+4544 Outputs
+```
 
-Predicts board evaluation
-Output: Single scalar value using Tanh activation
+#### Value Head
 
-🚀 Training
-Hyperparameters
-Python1Loss Function = Cross Entropy2Optimizer = Adam3Learning Rate = 0.0014Batch Size = 256Show more lines
-Training schedule:
+Predicts board evaluation:
 
-100 epochs for 2.5M positions
-50 epochs for 25M positions
+```text
+256 → 1 feature map
+↓
+BatchNorm
+↓
+ReLU
+↓
+Flatten
+↓
+FC Layer
+↓
+Tanh
+↓
+1 Output Value
+```
 
-Training Times
+---
 
-ModeDatasetTimeOffline2.5M positions~2 hoursOnline2.5M positions~6 hoursOnline25M positions~30 hours
+## 🚀 Training
 
-Results During Training
-Loss reduction achieved:
+### Hyperparameters
 
-ModelInitial LossFinal LossCNN4.152.30ResNet1.390.97
+```python
+LOSS_FUNCTION = CrossEntropyLoss()
+OPTIMIZER = Adam(lr=0.001)
+BATCH_SIZE = 256
+```
 
-🌳 Monte Carlo Tree Search (MCTS)
+### Epochs
+
+| Dataset Size | Epochs |
+| ------------ | ------ |
+| 2.5 Million  | 100    |
+| 25 Million   | 50     |
+
+### Training Times
+
+| Mode           | Time      |
+| -------------- | --------- |
+| Offline (2.5M) | ~2 hours  |
+| Online (2.5M)  | ~6 hours  |
+| Online (25M)   | ~30 hours |
+
+### Loss Improvement
+
+| Model  | Initial Loss | Final Loss |
+| ------ | ------------ | ---------- |
+| CNN    | 4.15         | 2.30       |
+| ResNet | 1.39         | 0.97       |
+
+---
+
+## 🌳 Monte Carlo Tree Search
+
 An AlphaZero-inspired MCTS implementation was developed.
-Core Components
-Node
-Stores:
 
-Current State
-Current Player
-Parent Node
-Children Nodes
-Prior Probability
-Visit Count
-Node Value
+### Node Structure
 
-Tree Search
-Implements:
+Each node stores:
 
-Selection
-Expansion
-Backpropagation
+- Current state
+- Current player
+- Parent node
+- Child nodes
+- Prior probability
+- Visit count
+- Node value
 
-Following the AlphaZero methodology without rollout simulations.
+### Search Process
 
-📈 Experimental Results
-Version 1 (CNN)
-✅ Produces mostly sensible moves
-✅ Plays competitively against low-level Stockfish
+1. Selection
+2. Expansion
+3. Backpropagation
+
+Unlike classical MCTS, rollout simulations were omitted, following the AlphaZero methodology.
+
+---
+
+## 📈 Experimental Results
+
+### Version 1 (CNN)
+
+✅ Produces mostly reasonable moves
+
+✅ Competitive against low-level Stockfish
+
 ❌ Struggles to convert winning positions
+
 ❌ Weak endgame performance
 
-Version 2 (ResNet)
+---
+
+### Version 2 (Residual Network)
+
 ✅ Stronger than Version 1
-✅ Achieves occasional victories against Stockfish
-✅ Better positional understanding
+
+✅ Achieves wins against Stockfish
+
+✅ Better strategic understanding
+
 ❌ Still struggles in endgames
-❌ More aggressive and sometimes unstable play style
 
-Version 3 (Large Dataset)
-✅ Consistently defeats lower Stockfish levels
-✅ Win rates exceeding 50% in several tests
-✅ Average Centipawn Loss around 30–50
-✅ Significant improvement in endgame conversion
-⚠️ Still exhibits an excessive preference for pawn promotion strategies
+❌ Aggressive style occasionally causes inaccuracies
 
-⚠️ AlphaZero Feasibility
-Although AlphaZero-style self-play was successfully tested on simpler environments such as:
+---
 
-Tic-Tac-Toe
-Connect Four
+### Version 3 (25M Dataset)
 
-it was impractical for full chess training on consumer hardware due to:
+✅ Win rate greater than 50% against multiple Stockfish configurations
 
-Extremely long search times
-Massive self-play requirements
-Repeated training cycles needed for convergence
+✅ Average Centipawn Loss between 30–50
 
-🔮 Future Work
-Potential improvements include:
+✅ Significantly improved endgame performance
 
-Larger training datasets
-Endgame-focused datasets
-Faster MCTS implementations
-C++ or Julia reimplementation for performance
-Improved search strategies
-Full-scale reinforcement learning training,
+✅ Consistently stronger than previous versions
 
-🏁 Conclusion
-This thesis successfully demonstrates that a machine learning-based chess agent can achieve a respectable playing level using supervised learning and commercially available hardware. The final model can defeat intermediate human players and low-level Stockfish configurations while following move choices that align closely with modern chess engine evaluations.
+⚠️ Still tends to over-prioritize pawn promotion opportunities
+
+---
+
+## ⚠️ AlphaZero Limitations
+
+Although AlphaZero-style self-play was successfully tested in simpler environments such as:
+
+- Tic-Tac-Toe
+- Connect Four
+
+full chess self-play training proved impractical on consumer hardware because:
+
+- MCTS is extremely time-consuming.
+- One game may require up to an hour.
+- Massive amounts of self-play data are needed.
+- Multiple training iterations are required to reach strong performance.
+
+---
+
+## 🔮 Future Work
+
+Possible future improvements include:
+
+- Larger datasets
+- Endgame-focused training data
+- More efficient MCTS implementation
+- C++ or Julia implementation for speed
+- Better search algorithms
+- Full reinforcement learning pipeline
+
+---
+
+## 🏁 Conclusion
+
+This project demonstrates that a supervised-learning chess agent can achieve a respectable playing level using commercially available hardware.
+
+The final model:
+
+- Can defeat intermediate human players.
+- Can defeat low-level Stockfish configurations.
+- Produces moves similar to those recommended by Stockfish 18.
+- Shows clear improvement with larger datasets and stronger architectures.
+
+Despite the limitations of reinforcement learning on consumer hardware, the project successfully achieved its primary objective of building a capable chess AI agent.
+
+---
+
+## 👨‍🎓 Academic Information
+
+**University of Patras**  
+Department of Electrical & Computer Engineering
+
+**Diploma Thesis**
+
+**Construction of an Automated Chess Engine Using Machine Learning Methods**
+
+**Author:** Georgios Zisis  
+**Supervisor:** Evangelos Dermatas
